@@ -15,6 +15,10 @@
 #import "SA_OAuthTwitterEngine.h"
 
 #import "SA_OAuthTwitterController.h"
+#import <Three20/Three20+Additions.h>
+
+#import "UserManager.h"
+#import "ConfigManager.h"
 
 // Constants
 static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
@@ -23,7 +27,7 @@ static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
 @property (nonatomic, readonly) UIToolbar *pinCopyPromptBar;
 @property (nonatomic, readwrite) UIInterfaceOrientation orientation;
 
-- (id) initWithEngine: (SA_OAuthTwitterEngine *) engine andOrientation:(UIInterfaceOrientation)theOrientation;
+//- (id) initWithEngine: (SA_OAuthTwitterEngine *) engine andOrientation:(UIInterfaceOrientation)theOrientation;
 //- (void) performInjection;
 - (NSString *) locateAuthPinInWebView: (UIWebView *) webView;
 
@@ -67,13 +71,14 @@ static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
 	
 	self.view = nil;
 	self.engine = nil;
+	[_pinCopyPromptBar release];
 	[super dealloc];
 }
-
+/*
 + (SA_OAuthTwitterController *) controllerToEnterCredentialsWithTwitterEngine: (SA_OAuthTwitterEngine *) engine delegate: (id <SA_OAuthTwitterControllerDelegate>) delegate forOrientation: (UIInterfaceOrientation)theOrientation {
 	if (![self credentialEntryRequiredWithTwitterEngine: engine]) return nil;			//not needed
 	
-	SA_OAuthTwitterController					*controller = [[[SA_OAuthTwitterController alloc] initWithEngine: engine andOrientation: theOrientation] autorelease];
+	SA_OAuthTwitterController *controller = [[[SA_OAuthTwitterController alloc] initWithEngine: engine andOrientation:theOrientation] autorelease];
 	
 	controller.delegate = delegate;
 	return controller;
@@ -82,17 +87,50 @@ static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
 + (SA_OAuthTwitterController *) controllerToEnterCredentialsWithTwitterEngine: (SA_OAuthTwitterEngine *) engine delegate: (id <SA_OAuthTwitterControllerDelegate>) delegate {
 	return [SA_OAuthTwitterController controllerToEnterCredentialsWithTwitterEngine: engine delegate: delegate forOrientation: UIInterfaceOrientationPortrait];
 }
-
+*/
 
 + (BOOL) credentialEntryRequiredWithTwitterEngine: (SA_OAuthTwitterEngine *) engine {
 	return ![engine isAuthorized];
 }
 
+- (id)initWithNavigatorURL:(NSURL *)URL query:(NSDictionary *)query {
+	if (self = [super initWithNavigatorURL:URL query:query]) {
+		self.delegate = [query valueForKey:@"delegate"];
+		self.engine = [UserManager sharedInstance].twitterEngine;
+		if (!self.engine.OAuthSetup) { // TODO: Fix this so it doesn't need to be commented out.
+			[self.engine requestRequestToken];
+		}
+		self.orientation = UIInterfaceOrientationPortrait;
+		_firstLoad = YES;
+		
+		if (UIInterfaceOrientationIsLandscape( self.orientation ) )
+			_webView = [[UIWebView alloc] initWithFrame: CGRectMake(0, 0, 480, 320)];
+		else
+			_webView = [[UIWebView alloc] initWithFrame: CGRectMake(0, 0, 320, 480)];
+		
+		_webView.alpha = 0.0;
+		_webView.delegate = self;
+		_webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+		if ([_webView respondsToSelector: @selector(setDetectsPhoneNumbers:)]) [(id) _webView setDetectsPhoneNumbers: NO];
+		if ([_webView respondsToSelector: @selector(setDataDetectorTypes:)]) [(id) _webView setDataDetectorTypes: 0];
+		
+		NSURLRequest *request = self.engine.authorizeURLRequest;
+		[_webView loadRequest: request];
+		
+		[[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(pasteboardChanged:) name: UIPasteboardChangedNotification object: nil];
+	}
+	return self;
+}
 
+- (BOOL)persistView:(NSMutableDictionary *)state {
+	return NO;
+}
+
+/*
 - (id) initWithEngine: (SA_OAuthTwitterEngine *) engine andOrientation:(UIInterfaceOrientation)theOrientation {
 	if (self = [super init]) {
-		self.engine = engine;
-		if (!engine.OAuthSetup) [_engine requestRequestToken];
+		//self.engine = engine;
+		if (!engine.OAuthSetup) [self.engine requestRequestToken];
 		self.orientation = theOrientation;
 		_firstLoad = YES;
 		
@@ -107,14 +145,14 @@ static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
 		if ([_webView respondsToSelector: @selector(setDetectsPhoneNumbers:)]) [(id) _webView setDetectsPhoneNumbers: NO];
 		if ([_webView respondsToSelector: @selector(setDataDetectorTypes:)]) [(id) _webView setDataDetectorTypes: 0];
 		
-		NSURLRequest			*request = _engine.authorizeURLRequest;
+		NSURLRequest			*request = self.engine.authorizeURLRequest;
 		[_webView loadRequest: request];
 
 		[[NSNotificationCenter defaultCenter] addObserver: self selector: @selector(pasteboardChanged:) name: UIPasteboardChangedNotification object: nil];
 	}
 	return self;
 }
-
+*/
 //=============================================================================================================================
 #pragma mark Actions
 - (void) denied {
@@ -123,10 +161,12 @@ static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
 }
 
 - (void) gotPin: (NSString *) pin {
-	_engine.pin = pin;
-	[_engine requestAccessToken];
+	self.engine.pin = pin;
+	[self.engine requestAccessToken];
 	
-	if ([_delegate respondsToSelector: @selector(OAuthTwitterController:authenticatedWithUsername:)]) [_delegate OAuthTwitterController: self authenticatedWithUsername: _engine.username];
+	if ([_delegate respondsToSelector: @selector(OAuthTwitterController:authenticatedWithUsername:)]) {
+		[_delegate OAuthTwitterController: self authenticatedWithUsername: self.engine.username];
+	}
 	[self performSelector: @selector(dismissModalViewControllerAnimated:) withObject: (id) kCFBooleanTrue afterDelay: 1.0];
 }
 
@@ -142,23 +182,19 @@ static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
 
 	_backgroundView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:kGGTwitterLoadingBackgroundImage]];
 	if ( UIInterfaceOrientationIsLandscape( self.orientation ) ) {
-		self.view = [[[UIView alloc] initWithFrame: CGRectMake(0, 0, 480, 288)] autorelease];	
-		_backgroundView.frame =  CGRectMake(0, 44, 480, 288);
+		self.view = [[[UIView alloc] initWithFrame: CGRectMake(0, 0, 480, 320)] autorelease];	
+		_backgroundView.frame =  CGRectMake(0, 0, 480, 320);
 		
-		_navBar = [[[UINavigationBar alloc] initWithFrame: CGRectMake(0, 0, 480, 32)] autorelease];
 	} else {
-		self.view = [[[UIView alloc] initWithFrame: CGRectMake(0, 0, 320, 416)] autorelease];	
-		_backgroundView.frame =  CGRectMake(0, 44, 320, 416);
-		_navBar = [[[UINavigationBar alloc] initWithFrame: CGRectMake(0, 0, 320, 44)] autorelease];
+		self.view = [[[UIView alloc] initWithFrame: CGRectMake(0, 0, 320, 480)] autorelease];	
+		_backgroundView.frame =  CGRectMake(0, 0, 320, 480);
 	}
-	_navBar.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
 	_backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 	self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
 	if (!UIInterfaceOrientationIsLandscape( self.orientation)) [self.view addSubview:_backgroundView];
 	
 	[self.view addSubview: _webView];
-	[self.view addSubview: _navBar];
 	
 	_blockerView = [[[UIView alloc] initWithFrame: CGRectMake(0, 0, 200, 60)] autorelease];
 	_blockerView.backgroundColor = [UIColor colorWithWhite: 0.0 alpha: 0.8];
@@ -182,10 +218,8 @@ static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
 	[self.view addSubview: _blockerView];
 	[spinner startAnimating];
 	
-	UINavigationItem				*navItem = [[[UINavigationItem alloc] initWithTitle: NSLocalizedString(@"Twitter Info", nil)] autorelease];
-	navItem.leftBarButtonItem = [[[UIBarButtonItem alloc] initWithBarButtonSystemItem: UIBarButtonSystemItemCancel target: self action: @selector(cancel:)] autorelease];
-	
-	[_navBar pushNavigationItem: navItem animated: NO];
+	self.title = @"Twitter Authentication";
+	self.navigationItem.leftBarButtonItem = [[[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(cancel:)] autorelease];
 	[self locateAuthPinInWebView: nil];
 }
 
@@ -199,6 +233,9 @@ static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
 //	[self performInjection];			//removed due to twitter update
 }
 
+- (void)close {
+	[self.navigationController dismissModalViewControllerAnimated:YES];
+}
 //=============================================================================================================================
 #pragma mark Notifications
 - (void) pasteboardChanged: (NSNotification *) note {
@@ -307,7 +344,7 @@ Ugly. I apologize for its inelegance. Bleah.
 	if (_pinCopyPromptBar == nil){
 		CGRect					bounds = self.view.bounds;
 		
-		_pinCopyPromptBar = [[[UIToolbar alloc] initWithFrame:CGRectMake(0, 44, bounds.size.width, 44)] autorelease];
+		_pinCopyPromptBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 44, bounds.size.width, 44)];// autorelease];
 		_pinCopyPromptBar.barStyle = UIBarStyleBlackTranslucent;
 		_pinCopyPromptBar.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
 
@@ -344,7 +381,7 @@ Ugly. I apologize for its inelegance. Bleah.
 	//[_activityIndicator startAnimating];
 	_loading = YES;
 	[UIView beginAnimations: nil context: nil];
-	_blockerView.alpha = 1.0;
+	//_blockerView.alpha = 1.0;
 	[UIView commitAnimations];
 }
 

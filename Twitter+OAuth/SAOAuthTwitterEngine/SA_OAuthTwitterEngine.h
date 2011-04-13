@@ -13,8 +13,8 @@
 
 @protocol SA_OAuthTwitterEngineDelegate 
 @optional
-- (void) storeCachedTwitterOAuthData: (NSString *) data forUsername: (NSString *) username;					//implement these methods to store off the creds returned by Twitter
-- (NSString *) cachedTwitterOAuthDataForUsername: (NSString *) username;										//if you don't do this, the user will have to re-authenticate every time they run
+- (void) storeCachedTwitterOAuthData: (NSString *) data forUsername: (NSString *) username;			//implement these methods to store off the creds returned by Twitter
+- (NSString *) cachedTwitterOAuthDataForUsername: (NSString *) username;							//if you don't do this, the user will have to re-authenticate every time they run
 - (void) twitterOAuthConnectionFailedWithData: (NSData *) data; 
 @end
 
@@ -39,7 +39,7 @@
 }
 
 @property (nonatomic, readwrite, retain) NSString *consumerSecret, *consumerKey;
-@property (nonatomic, readwrite, retain) NSURL *requestTokenURL, *accessTokenURL, *authorizeURL;				//you shouldn't need to touch these. Just in case...
+@property (nonatomic, readwrite, retain) NSURL *requestTokenURL, *accessTokenURL, *authorizeURL;	//you shouldn't need to touch these. Just in case...
 @property (nonatomic, readonly) BOOL OAuthSetup;
 
 + (SA_OAuthTwitterEngine *) OAuthTwitterEngineWithDelegate: (NSObject *) delegate;

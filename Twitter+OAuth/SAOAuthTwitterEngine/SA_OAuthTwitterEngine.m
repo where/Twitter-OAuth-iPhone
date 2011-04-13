@@ -10,7 +10,7 @@
 //
 
 #import "MGTwitterHTTPURLConnection.h"
-
+#import "Three20/Three20+Additions.h"
 
 #import "OAConsumer.h"
 #import "OAMutableURLRequest.h"
@@ -28,7 +28,7 @@
 
 - (NSString *) extractUsernameFromHTTPBody:(NSString *)body;
 
-// MGTwitterEngine impliments this
+// MGTwitterEngine implements this
 // include it here just so that we
 // can use this private method
 - (NSString *)_queryStringWithBase:(NSString *)base parameters:(NSDictionary *)params prefixed:(BOOL)prefixed;
@@ -54,11 +54,9 @@
 	[super dealloc];
 }
 
-
 + (SA_OAuthTwitterEngine *) OAuthTwitterEngineWithDelegate: (NSObject *) delegate {
     return [[[SA_OAuthTwitterEngine alloc] initOAuthWithDelegate: delegate] autorelease];
 }
-
 
 - (SA_OAuthTwitterEngine *) initOAuthWithDelegate: (NSObject *) delegate {
     if (self = (id) [super initWithDelegate: delegate]) {
@@ -100,7 +98,6 @@
 	return NO;
 }
 
-
 //This generates a URL request that can be passed to a UIWebView. It will open a page in which the user must enter their Twitter creds to validate
 - (NSURLRequest *) authorizeURLRequest {
 	if (!_requestToken.key && _requestToken.secret) return nil;	// we need a valid request token to generate the URL
@@ -111,17 +108,15 @@
 	return request;
 }
 
-
 //A request token is used to eventually generate an access token
 - (void) requestRequestToken {
-	[self requestURL: self.requestTokenURL token: nil onSuccess: @selector(setRequestToken:withData:) onFail: @selector(outhTicketFailed:data:)];
+	[self requestURL:self.requestTokenURL token:nil onSuccess:@selector(setRequestToken:withData:) onFail:@selector(outhTicketFailed:data:)];
 }
 
 //this is what we eventually want
 - (void) requestAccessToken {
-	[self requestURL: self.accessTokenURL token: _requestToken onSuccess: @selector(setAccessToken:withData:) onFail: @selector(outhTicketFailed:data:)];
+	[self requestURL:self.accessTokenURL token:_requestToken onSuccess:@selector(setAccessToken:withData:) onFail:@selector(outhTicketFailed:data:)];
 }
-
 
 - (void) clearAccessToken {
 	if ([_delegate respondsToSelector: @selector(storeCachedTwitterOAuthData:forUsername:)]) [(id) _delegate storeCachedTwitterOAuthData: @"" forUsername: self.username];
@@ -155,17 +150,14 @@
     [fetcher fetchDataWithRequest: request delegate: self didFinishSelector: success didFailSelector: fail];
 }
 
-
-//
 // if the fetch fails this is what will happen
 // you'll want to add your own error handling here.
 //
 - (void) outhTicketFailed: (OAServiceTicket *) ticket data: (NSData *) data {
+	TTDINFO(@"Twitter auth error: Outh TicketFailed");
 	if ([_delegate respondsToSelector: @selector(twitterOAuthConnectionFailedWithData:)]) [(id) _delegate twitterOAuthConnectionFailedWithData: data];
 }
 
-
-//
 // request token callback
 // when twitter sends us a request token this callback will fire
 // we can store the request token to be used later for generating

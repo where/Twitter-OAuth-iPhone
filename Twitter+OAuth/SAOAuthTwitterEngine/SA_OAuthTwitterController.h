@@ -10,6 +10,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <Three20/Three20+Additions.h>
 
 @class SA_OAuthTwitterEngine, SA_OAuthTwitterController;
 
@@ -21,7 +22,7 @@
 @end
 
 
-@interface SA_OAuthTwitterController : UIViewController <UIWebViewDelegate> {
+@interface SA_OAuthTwitterController : TTViewController <UIWebViewDelegate> {
 
 	SA_OAuthTwitterEngine						*_engine;
 	UIWebView									*_webView;
@@ -41,8 +42,8 @@
 @property (nonatomic, readwrite, assign) id <SA_OAuthTwitterControllerDelegate> delegate;
 @property (nonatomic, readonly) UINavigationBar *navigationBar;
 
-+ (SA_OAuthTwitterController *) controllerToEnterCredentialsWithTwitterEngine: (SA_OAuthTwitterEngine *) engine delegate: (id <SA_OAuthTwitterControllerDelegate>) delegate forOrientation:(UIInterfaceOrientation)theOrientation;
-+ (SA_OAuthTwitterController *) controllerToEnterCredentialsWithTwitterEngine: (SA_OAuthTwitterEngine *) engine delegate: (id <SA_OAuthTwitterControllerDelegate>) delegate;
+//+ (SA_OAuthTwitterController *) controllerToEnterCredentialsWithTwitterEngine: (SA_OAuthTwitterEngine *) engine delegate: (id <SA_OAuthTwitterControllerDelegate>) delegate forOrientation:(UIInterfaceOrientation)theOrientation;
+//+ (SA_OAuthTwitterController *) controllerToEnterCredentialsWithTwitterEngine: (SA_OAuthTwitterEngine *) engine delegate: (id <SA_OAuthTwitterControllerDelegate>) delegate;
 + (BOOL) credentialEntryRequiredWithTwitterEngine: (SA_OAuthTwitterEngine *) engine;
 
 @end
