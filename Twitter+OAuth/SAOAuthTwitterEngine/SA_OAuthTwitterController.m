@@ -381,7 +381,7 @@ Ugly. I apologize for its inelegance. Bleah.
 	//[_activityIndicator startAnimating];
 	_loading = YES;
 	[UIView beginAnimations: nil context: nil];
-	//_blockerView.alpha = 1.0;
+	_blockerView.alpha = 1.0;
 	[UIView commitAnimations];
 }
 
