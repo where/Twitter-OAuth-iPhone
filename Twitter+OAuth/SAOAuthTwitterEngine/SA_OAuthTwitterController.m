@@ -97,8 +97,8 @@ static NSString* const kGGTwitterLoadingBackgroundImage = @"twitter_load.png";
 	if (self = [super initWithNavigatorURL:URL query:query]) {
 		self.delegate = [query valueForKey:@"delegate"];
 		self.engine = [UserManager sharedInstance].twitterEngine;
-		if (!self.engine.OAuthSetup) { // TODO: Fix this so it doesn't need to be commented out.
-			[self.engine requestRequestToken];
+		if (!self.engine.OAuthSetup) {			
+			[self.engine requestRequestToken];    // This line takes a while...
 		}
 		self.orientation = UIInterfaceOrientationPortrait;
 		_firstLoad = YES;
